@@ -2,7 +2,16 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Secure Match">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f172a">
+
+    <link rel="manifest" href='data:application/json,{"name":"Secure Match Pro","short_name":"SecureMatch","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#00f2fe","icons":[{"src":"https://via.placeholder.com/192x192/00f2fe/ffffff?text=SM","sizes":"192x192","type":"image/png"},{"src":"https://via.placeholder.com/512x512/00f2fe/ffffff?text=SecureMatch","sizes":"512x512","type":"image/png"}]}'>
+
     <title>Secure Match | Tablet & Mobile Pro</title>
     <style>
         :root {
@@ -23,7 +32,7 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* מונע גלילה מיותרת באפליקציה */
+            overflow: hidden;
         }
 
         /* Header */
@@ -43,7 +52,7 @@
         .app-title { font-size: 1.4rem; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         /* Navigation */
-        nav { display: flex; justify-content: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); }
+        nav { display: flex; justify: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); }
         .nav-btn {
             background: var(--glass);
             border: 1px solid var(--glass-border);
@@ -59,22 +68,22 @@
         /* Content Areas */
         .tab-content {
             flex: 1;
-            display: none; /* כברירת מחדל הכל חבוי */
+            display: none;
             padding: 20px;
             overflow-y: auto;
         }
         #view-main.active {
             display: flex;
             gap: 20px;
-            flex-direction: column; /* ברירת מחדל למובייל (Portrait) */
+            flex-direction: column;
         }
 
-        /* שינוי למצב Landscape או מסכים רחבים (טאבלט) */
         @media (min-width: 768px) or (orientation: landscape) {
             #view-main.active {
                 flex-direction: row;
                 align-items: stretch;
             }
+            .panel { min-height: unset !important; height: auto; }
         }
 
         .panel {
@@ -229,11 +238,6 @@
                 <tr><td>דניאל מזרחי</td><td>040558899</td><td>44781</td><td>08/02/2026 10:05</td></tr>
                 <tr><td>יוסי כהן</td><td>055668822</td><td>33215</td><td>08/02/2026 11:20</td></tr>
                 <tr><td>שרה שפירא</td><td>201445566</td><td>99012</td><td>08/02/2026 13:45</td></tr>
-                <tr><td>רוני גבאי</td><td>032114455</td><td>77410</td><td>08/02/2026 14:10</td></tr>
-                <tr><td>אילן רגב</td><td>066554422</td><td>22569</td><td>08/02/2026 15:55</td></tr>
-                <tr><td>טלי דהן</td><td>302115588</td><td>66320</td><td>08/02/2026 17:20</td></tr>
-                <tr><td>עמית שלום</td><td>011223344</td><td>11458</td><td>08/02/2026 19:05</td></tr>
-                <tr><td>ליאור אשכנזי</td><td>058899663</td><td>55231</td><td>08/02/2026 21:40</td></tr>
             </tbody>
         </table>
     </div>
@@ -249,30 +253,41 @@
 <input type="file" id="file-user" hidden accept="image/*" onchange="uploadFile(this, 'user-img-preview', 'pref_user')">
 
 <script>
+    // --- PWA Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const blob = new Blob([`
+                self.addEventListener('fetch', (event) => {
+                    // Basic pass-through sw
+                    event.respondWith(fetch(event.request));
+                });
+            `], { type: 'text/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
+        });
+    }
+
     let successMode = true;
     let camStream = null;
 
-    // טעינת הגדרות מהדפדפן
     window.onload = () => {
         if(localStorage.getItem('pref_logo')) document.getElementById('app-logo').src = localStorage.getItem('pref_logo');
         if(localStorage.getItem('pref_user')) document.getElementById('user-img-preview').src = localStorage.getItem('pref_user');
     };
 
     function switchTab(target) {
-        // הסרת מחלקה פעילה מהכל
         document.getElementById('view-main').classList.remove('active');
         document.getElementById('view-reports').classList.remove('active');
         document.getElementById('btn-nav-main').classList.remove('active');
         document.getElementById('btn-nav-reports').classList.remove('active');
 
-        // הפעלת הלשונית שנבחרה
         if(target === 'main') {
             document.getElementById('view-main').classList.add('active');
             document.getElementById('btn-nav-main').classList.add('active');
         } else {
             document.getElementById('view-reports').classList.add('active');
             document.getElementById('btn-nav-reports').classList.add('active');
-            stopCamera(); // כיבוי מצלמה במעבר לדוחות
+            stopCamera();
         }
     }
 
@@ -284,7 +299,6 @@
             document.getElementById('scanner-panel').classList.add('scanning');
             document.getElementById('btn-start').disabled = true;
             document.getElementById('btn-start').innerText = "מעבד...";
-
             setTimeout(finishScan, 3000);
         } catch(e) { alert("נדרשת מצלמה תקינה"); }
     }
@@ -327,7 +341,6 @@
         if(camStream) camStream.getTracks().forEach(t => t.stop());
     }
 
-    // ניהול (כפתורים שקופים)
     function toggleResultMode() {
         successMode = !successMode;
         alert("מצב השוואה: " + (successMode ? "הצלחה" : "כישלון"));
