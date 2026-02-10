@@ -129,7 +129,7 @@
             <div class="scan-panel">
                 <div id="res-idle" style="opacity:0.4; font-size:0.7rem;">ממתין לבחירת אסיר...</div>
                 <div id="res-card" style="display:none; text-align:center; width:100%;">
-                    <img src="" id="res-img" class="user-image" onerror="this.src='https://via.placeholder.com/100?text=User'">
+                    <img src="" id="res-img" class="user-image" onerror="this.src='https://via.placeholder.com/100?text=No+Photo'">
                     <div style="font-size:0.8rem; margin:5px 0;" id="res-name"></div>
                     <button class="btn-main btn-confirm" id="approve-btn" onclick="saveMatch()">אשר רישום</button>
                 </div>
@@ -162,11 +162,10 @@
 
 <div class="admin-bar">
     <div class="admin-box" onclick="toggleSim()"></div>
-    <div class="admin-box" onclick="document.getElementById('file-u').click()"></div>
+    <div class="admin-box" style="visibility:hidden"></div>
     <div class="admin-box" onclick="document.getElementById('logo-u').click()"></div>
 </div>
 
-<input type="file" id="file-u" hidden accept="image/*" onchange="loadImg(this)">
 <input type="file" id="logo-u" hidden accept="image/*" onchange="loadLogo(this)">
 
 <script>
@@ -218,7 +217,7 @@
     let isSuccessSim = true;
     let camStream = null;
     let reports = [];
-    let confirmedIds = new Set(); // שומר את מספרי האסירים שאושרו
+    let confirmedIds = new Set();
 
     window.addEventListener('DOMContentLoaded', () => {
         initReports();
@@ -299,11 +298,9 @@
 
     function selectPrisoner(id) {
         document.querySelectorAll('#prisoner-table-body tr').forEach(r => r.classList.remove('selected'));
-        
         selectedPrisoner = prisoners.find(p => p.id === id);
         const row = document.getElementById(`p-row-${id}`);
         if(row) row.classList.add('selected');
-        
         document.getElementById('start-btn').disabled = false;
         document.getElementById('res-idle').innerText = "מוכן לסריקה עבור: " + selectedPrisoner.name;
         document.getElementById('res-card').style.display = 'none';
@@ -328,7 +325,8 @@
             document.getElementById('res-idle').style.display = 'none';
             document.getElementById('res-card').style.display = 'block';
             document.getElementById('res-name').innerText = selectedPrisoner.name;
-            if(localStorage.getItem('demo_u')) document.getElementById('res-img').src = localStorage.getItem('demo_u');
+            // שינוי: טעינת תמונה לפי מספר אסיר מהתיקייה המקומית
+            document.getElementById('res-img').src = `${selectedPrisoner.id}.jpg`;
         } else {
             const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
             if(row) row.classList.add('match-fail');
@@ -338,14 +336,12 @@
     }
 
     function saveMatch() {
-        // צביעת השורה בירוק רק עכשיו - לאחר לחיצה על "אשר רישום"
         confirmedIds.add(selectedPrisoner.id);
         const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
         if(row) {
             row.classList.remove('selected', 'match-fail');
             row.classList.add('match-ok');
         }
-
         const entry = {
             time: new Date().toLocaleString('he-IL'),
             name: selectedPrisoner.name,
@@ -364,7 +360,6 @@
         document.getElementById('res-card').style.display = 'none';
         document.getElementById('res-idle').style.display = 'block';
         document.getElementById('res-idle').innerText = "ממתין לבחירת אסיר...";
-        // ה-renderPrisoners יוודא שהשורות נשארות ירוקות לפי ה-Set
         renderPrisoners();
     }
 
@@ -415,14 +410,6 @@
     function loadSavedLogo() {
         const savedLogo = localStorage.getItem('app_logo_cache');
         if (savedLogo) document.getElementById('main-logo').src = savedLogo;
-    }
-
-    function loadImg(i) {
-        if (i.files && i.files[0]) {
-            const r = new FileReader();
-            r.onload = (e) => localStorage.setItem('demo_u', e.target.result);
-            r.readAsDataURL(i.files[0]);
-        }
     }
 </script>
 </body>
