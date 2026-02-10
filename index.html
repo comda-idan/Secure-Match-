@@ -31,6 +31,8 @@
             display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
             background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);
         }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .app-logo { height: 35px; width: auto; object-fit: contain; }
         .app-title { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
 
         nav { display: flex; justify-content: center; gap: 10px; padding: 5px; background: rgba(0,0,0,0.2); }
@@ -84,7 +86,10 @@
 <body>
 
 <header>
-    <div class="app-title">SECURE MATCH PRO</div>
+    <div class="header-right">
+        <img src="logo.png" id="main-logo" class="app-logo" alt="Logo">
+        <div class="app-title">SECURE MATCH PRO</div>
+    </div>
     <nav>
         <button class="nav-btn active" id="b-main" onclick="tab('main')">זיהוי</button>
         <button class="nav-btn" id="b-reports" onclick="tab('reports')">דוחות</button>
@@ -158,8 +163,10 @@
 <div class="admin-bar">
     <div class="admin-box" onclick="toggleSim()"></div>
     <div class="admin-box" onclick="document.getElementById('file-u').click()"></div>
-</div>
+    <div class="admin-box" onclick="document.getElementById('logo-u').click()"></div> </div>
+
 <input type="file" id="file-u" hidden accept="image/*" onchange="loadImg(this)">
+<input type="file" id="logo-u" hidden accept="image/*" onchange="loadLogo(this)">
 
 <script>
     const prisoners = [
@@ -213,6 +220,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         initReports();
+        loadSavedLogo(); // טעינת לוגו מה-Cache
         filterWing('אגף א');
         renderReports();
     });
@@ -220,45 +228,28 @@
     function initReports() {
         const saved = localStorage.getItem('saved_reports');
         let needsReset = false;
-
-        // בדיקה אם הנתונים ב-Cache הם הישנים (שעה 8:00)
         if (saved) {
             const data = JSON.parse(saved);
-            if (data.length > 0 && data[0].time.includes("08:00:00")) {
-                needsReset = true;
-            }
+            if (data.length > 0 && data[0].time.includes("08:00:00")) needsReset = true;
         }
-
         if (!saved || JSON.parse(saved).length === 0 || needsReset) {
             const initialReports = [];
             const wings = ["אגף א", "אגף ב", "אגף ג", "אגף ד"];
             let currentTime = new Date();
-            // התחלה של שעתיים אחורה
             currentTime.setHours(currentTime.getHours() - 2);
-
             wings.forEach(wingName => {
                 const wingPrisoners = prisoners.filter(p => p.wing === wingName);
-                
                 wingPrisoners.forEach(p => {
-                    // הפרש של 10-20 שניות בין אסירים באותו אגף
                     const secondsGap = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
                     currentTime.setSeconds(currentTime.getSeconds() + secondsGap);
-                    
                     initialReports.push({
                         time: currentTime.toLocaleString('he-IL'),
-                        name: p.name,
-                        id: p.id,
-                        wing: p.wing,
-                        ts: currentTime.getTime()
+                        name: p.name, id: p.id, wing: p.wing, ts: currentTime.getTime()
                     });
                 });
-
-                // הפרש של 5-10 דקות בין מעבר אגפים
                 const minutesGap = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
                 currentTime.setMinutes(currentTime.getMinutes() + minutesGap);
             });
-
-            // מיון מהחדש לישן
             reports = initialReports.sort((a,b) => b.ts - a.ts);
             localStorage.setItem('saved_reports', JSON.stringify(reports));
         } else {
@@ -280,11 +271,7 @@
         btns.forEach(b => {
             const btnText = b.innerText.trim().replace("'", "");
             const targetText = wing.replace("'", "");
-            if(btnText === targetText) {
-                b.classList.add('active');
-            } else {
-                b.classList.remove('active');
-            }
+            b.classList.toggle('active', btnText === targetText);
         });
         renderPrisoners();
     }
@@ -311,12 +298,19 @@
     }
 
     function selectPrisoner(id) {
+        // תיקון: איפוס צבעים של שורות קודמות שלא אושרו
+        document.querySelectorAll('#prisoner-table-body tr').forEach(r => {
+            r.classList.remove('selected', 'match-ok', 'match-fail');
+        });
+        
         selectedPrisoner = prisoners.find(p => p.id === id);
-        document.querySelectorAll('#prisoner-table-body tr').forEach(r => r.classList.remove('selected'));
         const row = document.getElementById(`p-row-${id}`);
         if(row) row.classList.add('selected');
+        
         document.getElementById('start-btn').disabled = false;
         document.getElementById('res-idle').innerText = "מוכן לסריקה עבור: " + selectedPrisoner.name;
+        document.getElementById('res-card').style.display = 'none';
+        document.getElementById('res-idle').style.display = 'block';
     }
 
     async function startProcess() {
@@ -335,7 +329,7 @@
         const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
         
         if(isSuccessSim) {
-            if(row) row.className = 'match-ok';
+            if(row) row.className = 'match-ok'; // נצבע בירוק
             document.getElementById('res-idle').style.display = 'none';
             document.getElementById('res-card').style.display = 'block';
             document.getElementById('res-name').innerText = selectedPrisoner.name;
@@ -393,15 +387,34 @@
         renderReports(filtered);
     }
 
-    let sortAsc = false;
     function sortReports() {
-        sortAsc = !sortAsc;
-        reports.sort((a,b) => sortAsc ? a.ts - b.ts : b.ts - a.ts);
+        reports.sort((a,b) => b.ts - a.ts);
         renderReports();
     }
 
     function stopCam() { if(camStream) camStream.getTracks().forEach(t => t.stop()); }
     function toggleSim() { isSuccessSim = !isSuccessSim; alert("סימולציה: " + (isSuccessSim ? "הצלחה" : "כישלון")); }
+    
+    // פונקציות לוגו
+    function loadLogo(input) {
+        if (input.files && input.files[0]) {
+            const r = new FileReader();
+            r.onload = (e) => {
+                const data = e.target.result;
+                document.getElementById('main-logo').src = data;
+                localStorage.setItem('app_logo_cache', data);
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function loadSavedLogo() {
+        const savedLogo = localStorage.getItem('app_logo_cache');
+        if (savedLogo) {
+            document.getElementById('main-logo').src = savedLogo;
+        }
+    }
+
     function loadImg(i) {
         if (i.files && i.files[0]) {
             const r = new FileReader();
