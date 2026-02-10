@@ -59,7 +59,7 @@
         td { padding: 8px; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; cursor: pointer; }
         
         tr.selected { background: rgba(79, 172, 254, 0.3) !important; }
-        tr.match-ok { background: rgba(46, 204, 113, 0.4) !important; }
+        tr.match-ok { background: rgba(46, 204, 113, 0.6) !important; color: white !important; font-weight: bold; }
         tr.match-fail { background: rgba(255, 75, 43, 0.4) !important; }
 
         .bottom-half { flex: 1; display: flex; gap: 10px; }
@@ -163,7 +163,8 @@
 <div class="admin-bar">
     <div class="admin-box" onclick="toggleSim()"></div>
     <div class="admin-box" onclick="document.getElementById('file-u').click()"></div>
-    <div class="admin-box" onclick="document.getElementById('logo-u').click()"></div> </div>
+    <div class="admin-box" onclick="document.getElementById('logo-u').click()"></div>
+</div>
 
 <input type="file" id="file-u" hidden accept="image/*" onchange="loadImg(this)">
 <input type="file" id="logo-u" hidden accept="image/*" onchange="loadLogo(this)">
@@ -217,22 +218,18 @@
     let isSuccessSim = true;
     let camStream = null;
     let reports = [];
+    let confirmedIds = new Set(); // שומר את מספרי האסירים שאושרו
 
     window.addEventListener('DOMContentLoaded', () => {
         initReports();
-        loadSavedLogo(); // טעינת לוגו מה-Cache
+        loadSavedLogo();
         filterWing('אגף א');
         renderReports();
     });
 
     function initReports() {
         const saved = localStorage.getItem('saved_reports');
-        let needsReset = false;
-        if (saved) {
-            const data = JSON.parse(saved);
-            if (data.length > 0 && data[0].time.includes("08:00:00")) needsReset = true;
-        }
-        if (!saved || JSON.parse(saved).length === 0 || needsReset) {
+        if (!saved || JSON.parse(saved).length === 0) {
             const initialReports = [];
             const wings = ["אגף א", "אגף ב", "אגף ג", "אגף ד"];
             let currentTime = new Date();
@@ -278,13 +275,16 @@
 
     function renderPrisoners(data = null) {
         const list = data || prisoners.filter(p => p.wing === currentWing);
-        const html = list.map(p => `
-            <tr id="p-row-${p.id}" onclick="selectPrisoner('${p.id}')">
-                <td>${p.id}</td>
-                <td>${p.name}</td>
-                <td>${p.tz}</td>
-            </tr>
-        `).join('');
+        const html = list.map(p => {
+            let statusClass = confirmedIds.has(p.id) ? 'match-ok' : '';
+            return `
+                <tr id="p-row-${p.id}" class="${statusClass}" onclick="selectPrisoner('${p.id}')">
+                    <td>${p.id}</td>
+                    <td>${p.name}</td>
+                    <td>${p.tz}</td>
+                </tr>
+            `;
+        }).join('');
         document.getElementById('prisoner-table-body').innerHTML = html;
         selectedPrisoner = null;
         document.getElementById('start-btn').disabled = true;
@@ -298,10 +298,7 @@
     }
 
     function selectPrisoner(id) {
-        // תיקון: איפוס צבעים של שורות קודמות שלא אושרו
-        document.querySelectorAll('#prisoner-table-body tr').forEach(r => {
-            r.classList.remove('selected', 'match-ok', 'match-fail');
-        });
+        document.querySelectorAll('#prisoner-table-body tr').forEach(r => r.classList.remove('selected'));
         
         selectedPrisoner = prisoners.find(p => p.id === id);
         const row = document.getElementById(`p-row-${id}`);
@@ -326,22 +323,29 @@
     function onScanComplete() {
         stopCam();
         document.getElementById('panel-v').classList.remove('scanning');
-        const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
         
         if(isSuccessSim) {
-            if(row) row.className = 'match-ok'; // נצבע בירוק
             document.getElementById('res-idle').style.display = 'none';
             document.getElementById('res-card').style.display = 'block';
             document.getElementById('res-name').innerText = selectedPrisoner.name;
             if(localStorage.getItem('demo_u')) document.getElementById('res-img').src = localStorage.getItem('demo_u');
         } else {
-            if(row) row.className = 'match-fail';
+            const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
+            if(row) row.classList.add('match-fail');
             alert("אין התאמה!");
             document.getElementById('start-btn').disabled = false;
         }
     }
 
     function saveMatch() {
+        // צביעת השורה בירוק רק עכשיו - לאחר לחיצה על "אשר רישום"
+        confirmedIds.add(selectedPrisoner.id);
+        const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
+        if(row) {
+            row.classList.remove('selected', 'match-fail');
+            row.classList.add('match-ok');
+        }
+
         const entry = {
             time: new Date().toLocaleString('he-IL'),
             name: selectedPrisoner.name,
@@ -360,6 +364,7 @@
         document.getElementById('res-card').style.display = 'none';
         document.getElementById('res-idle').style.display = 'block';
         document.getElementById('res-idle').innerText = "ממתין לבחירת אסיר...";
+        // ה-renderPrisoners יוודא שהשורות נשארות ירוקות לפי ה-Set
         renderPrisoners();
     }
 
@@ -395,7 +400,6 @@
     function stopCam() { if(camStream) camStream.getTracks().forEach(t => t.stop()); }
     function toggleSim() { isSuccessSim = !isSuccessSim; alert("סימולציה: " + (isSuccessSim ? "הצלחה" : "כישלון")); }
     
-    // פונקציות לוגו
     function loadLogo(input) {
         if (input.files && input.files[0]) {
             const r = new FileReader();
@@ -410,9 +414,7 @@
 
     function loadSavedLogo() {
         const savedLogo = localStorage.getItem('app_logo_cache');
-        if (savedLogo) {
-            document.getElementById('main-logo').src = savedLogo;
-        }
+        if (savedLogo) document.getElementById('main-logo').src = savedLogo;
     }
 
     function loadImg(i) {
