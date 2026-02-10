@@ -3,18 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Secure Match Pro | Prison Management</title>
     
-    <title>Secure Match Pro</title>
-    <meta name="theme-color" content="#0f172a">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Secure Match">
-
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Secure Match">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/00f2fe/ffffff?text=SM">
-
-    <link rel="manifest" href='data:application/json,{"name":"Secure Match Pro","short_name":"SecureMatch","start_url":"index.html","display":"standalone","orientation":"any","background_color":"#0f172a","theme_color":"#00f2fe","icons":[{"src":"https://via.placeholder.com/192x192/00f2fe/ffffff?text=SM","sizes":"192x192","type":"image/png"},{"src":"https://via.placeholder.com/512x512/00f2fe/ffffff?text=SM","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href='data:application/json,{"name":"Secure Match Admin","short_name":"SecureMatch","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#00f2fe","icons":[{"src":"https://via.placeholder.com/192","sizes":"192x192","type":"image/png"}]}'>
 
     <style>
         :root {
@@ -22,246 +15,397 @@
             --secondary: #4facfe;
             --danger: #ff4b2b;
             --success: #2ecc71;
+            --warning: #f1c40f;
             --glass: rgba(255, 255, 255, 0.07);
             --glass-border: rgba(255, 255, 255, 0.12);
+            --bg-dark: #0f172a;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: white;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            color: white; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1.5rem;
-            background: var(--glass);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--glass-border);
-            z-index: 100;
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
+            background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);
         }
+        .app-title { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
 
-        .logo-container { display: flex; align-items: center; gap: 12px; }
-        #app-logo { height: 40px; width: auto; border-radius: 6px; }
-        .app-title { font-size: 1.4rem; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        nav { display: flex; justify-content: center; gap: 10px; padding: 5px; background: rgba(0,0,0,0.2); }
+        .nav-btn { background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 6px 15px; border-radius: 15px; cursor: pointer; font-size: 0.85rem; }
+        .nav-btn.active { background: var(--secondary); box-shadow: 0 0 10px var(--secondary); }
 
-        nav { display: flex; justify-content: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); }
-        .nav-btn {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .nav-btn.active { background: var(--secondary); box-shadow: 0 0 12px var(--secondary); border-color: transparent; }
+        .content-area { flex: 1; position: relative; overflow: hidden; }
+        .tab-content { position: absolute; inset: 0; display: none; flex-direction: column; padding: 10px; }
+        .tab-content.active { display: flex; }
 
-        .tab-content { flex: 1; display: none; padding: 20px; overflow-y: auto; }
-        #view-main.active { display: flex; gap: 20px; flex-direction: column; }
+        #view-main { gap: 10px; }
+        
+        .top-half { flex: 1.2; background: var(--glass); border-radius: 15px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; overflow: hidden; }
+        .wing-tabs { display: flex; overflow-x: auto; background: rgba(0,0,0,0.3); padding: 5px; gap: 5px; }
+        .wing-btn { padding: 5px 12px; border-radius: 10px; border: 1px solid var(--glass-border); background: transparent; color: white; cursor: pointer; white-space: nowrap; font-size: 0.8rem; }
+        .wing-btn.active { background: var(--primary) !important; color: #000 !important; font-weight: bold; }
+        
+        .search-bar { padding: 8px; display: flex; gap: 10px; background: rgba(255,255,255,0.03); }
+        .search-bar input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 5px 10px; border-radius: 5px; outline: none; }
 
-        @media (orientation: landscape) {
-            #view-main.active { flex-direction: row; align-items: stretch; }
-            .panel { min-height: unset !important; height: auto; padding: 15px !important; }
-            #video-container, .user-image { max-width: 150px !important; }
-        }
+        .list-container { flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th { position: sticky; top: 0; background: #1e293b; font-size: 0.75rem; color: var(--secondary); padding: 8px; }
+        td { padding: 8px; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; cursor: pointer; }
+        
+        tr.selected { background: rgba(79, 172, 254, 0.3) !important; }
+        tr.match-ok { background: rgba(46, 204, 113, 0.4) !important; }
+        tr.match-fail { background: rgba(255, 75, 43, 0.4) !important; }
 
-        .panel {
-            flex: 1;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 350px;
-        }
-
-        #video-container {
-            width: 100%;
-            max-width: 280px;
-            aspect-ratio: 1;
-            background: #000;
-            border-radius: 50%;
-            border: 3px solid var(--secondary);
-            position: relative;
-            overflow: hidden;
-        }
+        .bottom-half { flex: 1; display: flex; gap: 10px; }
+        .scan-panel { flex: 1; background: var(--glass); border-radius: 15px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; position: relative; }
+        
+        #video-container, .user-image { width: 120px; height: 120px; background: #000; border-radius: 50%; border: 2px solid var(--secondary); overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .scan-line { position: absolute; top: 10%; left: 0; width: 100%; height: 2px; background: var(--primary); display: none; }
+        .scanning .scan-line { display: block; animation: scan 2s infinite linear; }
+        @keyframes scan { 0% { top: 10%; } 100% { top: 90%; } }
 
-        .scan-line {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 3px;
-            background: var(--primary);
-            box-shadow: 0 0 15px var(--primary);
-            display: none;
-        }
-        .scanning .scan-line { display: block; animation: scanAnim 2s infinite ease-in-out; }
-        @keyframes scanAnim { 0%, 100% { top: 10%; } 50% { top: 90%; } }
-
-        .result-card { display: none; width: 100%; text-align: center; }
-        .user-image { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover; margin-bottom: 15px; }
-        .info-list { width: 100%; text-align: right; margin-bottom: 15px; }
-        .info-row { padding: 8px 0; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; font-size: 0.9rem; }
-        .label { color: var(--secondary); font-weight: 600; }
-
-        .table-container { overflow-x: auto; background: var(--glass); border-radius: 18px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; }
-
-        .btn-main { width: 100%; max-width: 240px; padding: 14px; border-radius: 50px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .btn-scan { background: linear-gradient(45deg, var(--secondary), var(--primary)); color: white; }
+        .btn-main { width: 100%; max-width: 150px; padding: 8px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-top: 5px; transition: 0.3s; }
+        .btn-main:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-scan { background: var(--primary); color: #000; }
         .btn-confirm { background: var(--success); color: white; }
-        .fail-ui { background: rgba(255, 75, 43, 0.1) !important; border-color: var(--danger) !important; }
 
-        .admin-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 30px; display: flex; opacity: 0; z-index: 1000; }
+        .controls-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; padding: 5px; background: var(--glass); border-radius: 10px; }
+        .controls-row input, .controls-row select { background: #000; border: 1px solid var(--glass-border); color: white; padding: 5px; border-radius: 5px; font-size: 0.8rem; }
+
+        .admin-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 20px; display: flex; opacity: 0; z-index: 9999; }
         .admin-box { flex: 1; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo-container">
-        <img id="app-logo" src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/45?text=SM'">
-        <span class="app-title">SECURE MATCH</span>
-    </div>
+    <div class="app-title">SECURE MATCH PRO</div>
     <nav>
-        <button class="nav-btn active" id="btn-nav-main" onclick="switchTab('main')">זיהוי פנים</button>
-        <button class="nav-btn" id="btn-nav-reports" onclick="switchTab('reports')">דוחות</button>
+        <button class="nav-btn active" id="b-main" onclick="tab('main')">זיהוי</button>
+        <button class="nav-btn" id="b-reports" onclick="tab('reports')">דוחות</button>
     </nav>
 </header>
 
-<main id="view-main" class="tab-content active">
-    <section class="panel" id="scanner-panel">
-        <h3 style="margin:0; color: var(--primary);">עמדת סריקה</h3>
-        <div id="video-container">
-            <video id="webcam" autoplay muted playsinline></video>
-            <div class="scan-line"></div>
-        </div>
-        <button class="btn-main btn-scan" id="btn-start" onclick="runScan()" style="margin-top:15px">התחל סריקת פנים</button>
-    </section>
-
-    <section class="panel" id="result-panel">
-        <h3 style="margin:0; color: var(--primary);">נתוני אימות</h3>
-        <div id="idle-msg" style="opacity:0.4; text-align:center;"><p>ממתין לסריקה...</p></div>
-
-        <div class="result-card" id="card-success">
-            <img src="person.jpg" id="user-img-preview" class="user-image" onerror="this.src='https://via.placeholder.com/120'">
-            <div class="info-list">
-                <div class="info-row"><span class="label">שם:</span><span>ישראל ישראלי</span></div>
-                <div class="info-row"><span class="label">ת.ז:</span><span>111111118</span></div>
-                <div class="info-row"><span class="label">זמן:</span><span id="time-display"></span></div>
+<div class="content-area">
+    <main id="view-main" class="tab-content active">
+        <section class="top-half">
+            <div class="wing-tabs" id="wing-tabs">
+                <button class="wing-btn" onclick="filterWing('אגף א')">אגף א'</button>
+                <button class="wing-btn" onclick="filterWing('אגף ב')">אגף ב'</button>
+                <button class="wing-btn" onclick="filterWing('אגף ג')">אגף ג'</button>
+                <button class="wing-btn" onclick="filterWing('אגף ד')">אגף ד'</button>
             </div>
-            <button class="btn-main btn-confirm" onclick="approveAndSave()">אשר רישום</button>
-        </div>
+            <div class="search-bar">
+                <input type="number" id="prisoner-search" placeholder="חיפוש לפי מספר אסיר..." oninput="searchPrisoner()">
+            </div>
+            <div class="list-container">
+                <table>
+                    <thead>
+                        <tr><th>מס' אסיר</th><th>שם מלא</th><th>ת.ז</th></tr>
+                    </thead>
+                    <tbody id="prisoner-table-body"></tbody>
+                </table>
+            </div>
+        </section>
 
-        <div class="result-card" id="card-fail">
-            <div style="font-size: 3rem; color: var(--danger);">✕</div>
-            <h3 style="color: var(--danger);">אין התאמה!</h3>
-            <button class="nav-btn" onclick="resetUI()">חדש</button>
+        <section class="bottom-half">
+            <div class="scan-panel" id="panel-v">
+                <div id="video-container">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <div class="scan-line"></div>
+                </div>
+                <button class="btn-main btn-scan" id="start-btn" disabled onclick="startProcess()">סרוק פנים</button>
+            </div>
+            <div class="scan-panel">
+                <div id="res-idle" style="opacity:0.4; font-size:0.7rem;">ממתין לבחירת אסיר...</div>
+                <div id="res-card" style="display:none; text-align:center; width:100%;">
+                    <img src="" id="res-img" class="user-image" onerror="this.src='https://via.placeholder.com/100?text=User'">
+                    <div style="font-size:0.8rem; margin:5px 0;" id="res-name"></div>
+                    <button class="btn-main btn-confirm" id="approve-btn" onclick="saveMatch()">אשר רישום</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <section id="view-reports" class="tab-content">
+        <div class="controls-row">
+            <input type="text" id="f-name" placeholder="סינון שם..." oninput="filterReports()">
+            <select id="f-wing" onchange="filterReports()">
+                <option value="">כל האגפים</option>
+                <option value="אגף א">אגף א'</option>
+                <option value="אגף ב">אגף ב'</option>
+                <option value="אגף ג">אגף ג'</option>
+                <option value="אגף ד">אגף ד'</option>
+            </select>
+            <button class="nav-btn" onclick="sortReports()">מיין לפי זמן</button>
+        </div>
+        <div class="list-container" style="background: var(--glass); border-radius:10px;">
+            <table id="reports-table">
+                <thead>
+                    <tr><th>זמן</th><th>שם</th><th>מס' אסיר</th><th>אגף</th></tr>
+                </thead>
+                <tbody id="reports-body"></tbody>
+            </table>
         </div>
     </section>
-</main>
-
-<section id="view-reports" class="tab-content">
-    <h2 style="text-align: center; color: var(--secondary);">יומן רישומים</h2>
-    <div class="table-container">
-        <table>
-            <thead><tr><th>שם מלא</th><th>תעודת זהות</th><th>מספר אסיר</th><th>זמן</th></tr></thead>
-            <tbody id="reports-list">
-                <tr><td>אברהם לוי</td><td>021445588</td><td>88542</td><td>08/02/2026 08:15</td></tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<div class="admin-bar">
-    <div class="admin-box" onclick="document.getElementById('file-logo').click()"></div>
-    <div class="admin-box" onclick="toggleResultMode()"></div>
-    <div class="admin-box" onclick="document.getElementById('file-user').click()"></div>
 </div>
 
-<input type="file" id="file-logo" hidden accept="image/*" onchange="uploadFile(this, 'app-logo', 'pref_logo')">
-<input type="file" id="file-user" hidden accept="image/*" onchange="uploadFile(this, 'user-img-preview', 'pref_user')">
+<div class="admin-bar">
+    <div class="admin-box" onclick="toggleSim()"></div>
+    <div class="admin-box" onclick="document.getElementById('file-u').click()"></div>
+</div>
+<input type="file" id="file-u" hidden accept="image/*" onchange="loadImg(this)">
 
 <script>
-    // --- Service Worker Logic ---
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIGV2ZW50ID0+IHsgZXZlbnQucmVzcG9uZFdpdGgoZmV0Y2goZXZlbnQucmVxdWVzdCkpOyB9KTs=')
-        .catch(() => {}); 
-    }
+    const prisoners = [
+        {id: "1001", name: "אלון אברהם", tz: "011223344", wing: "אגף א"},
+        {id: "1002", name: "בנימין ביטון", tz: "022334455", wing: "אגף א"},
+        {id: "1003", name: "גדי גולן", tz: "033445566", wing: "אגף א"},
+        {id: "1004", name: "דורון דנינו", tz: "044556677", wing: "אגף א"},
+        {id: "1005", name: "הראל הלוי", tz: "055667788", wing: "אגף א"},
+        {id: "1006", name: "וסיים ועקנין", tz: "066778899", wing: "אגף א"},
+        {id: "1007", name: "זיו זילבר", tz: "077889900", wing: "אגף א"},
+        {id: "1008", name: "חיים חזן", tz: "088990011", wing: "אגף א"},
+        {id: "1009", name: "טל טויטו", tz: "099001122", wing: "אגף א"},
+        {id: "1010", name: "יניב יוסף", tz: "100112233", wing: "אגף א"},
+        {id: "2001", name: "כפיר כרמל", tz: "201223344", wing: "אגף ב"},
+        {id: "2002", name: "ליאור לביא", tz: "202334455", wing: "אגף ב"},
+        {id: "2003", name: "מאור מלכה", tz: "203445566", wing: "אגף ב"},
+        {id: "2004", name: "ניר נחום", tz: "204556677", wing: "אגף ב"},
+        {id: "2005", name: "סער סופר", tz: "205667788", wing: "אגף ב"},
+        {id: "2006", name: "עדי עמר", tz: "206778899", wing: "אגף ב"},
+        {id: "2007", name: "פנחס פרץ", tz: "207889900", wing: "אגף ב"},
+        {id: "2008", name: "צחי צור", tz: "208990011", wing: "אגף ב"},
+        {id: "2009", name: "קובי קדוש", tz: "209001122", wing: "אגף ב"},
+        {id: "2010", name: "רונן רפאל", tz: "210112233", wing: "אגף ב"},
+        {id: "3001", name: "שרון שבתאי", tz: "301223344", wing: "אגף ג"},
+        {id: "3002", name: "תומר תמיר", tz: "302334455", wing: "אגף ג"},
+        {id: "3003", name: "איתן ארז", tz: "303445566", wing: "אגף ג"},
+        {id: "3004", name: "בועז ברק", tz: "304556677", wing: "אגף ג"},
+        {id: "3005", name: "גיא גבע", tz: "305667788", wing: "אגף ג"},
+        {id: "3006", name: "דני דיין", tz: "306778899", wing: "אגף ג"},
+        {id: "3007", name: "הדר הראל", tz: "307889900", wing: "אגף ג"},
+        {id: "3008", name: "ויקטור וייס", tz: "308990011", wing: "אגף ג"},
+        {id: "3009", name: "זאב זאבי", tz: "309001122", wing: "אגף ג"},
+        {id: "3010", name: "חן חמד", tz: "310112233", wing: "אגף ג"},
+        {id: "4001", name: "יוחאי יהלום", tz: "401223344", wing: "אגף ד"},
+        {id: "4002", name: "לירן לוין", tz: "402334455", wing: "אגף ד"},
+        {id: "4003", name: "מיכאל מור", tz: "403445566", wing: "אגף ד"},
+        {id: "4004", name: "נועם נבו", tz: "404556677", wing: "אגף ד"},
+        {id: "4005", name: "עומרי ענבר", tz: "405667788", wing: "אגף ד"},
+        {id: "4006", name: "פיני פלד", tz: "406778899", wing: "אגף ד"},
+        {id: "4007", name: "צורי צבי", tz: "407889900", wing: "אגף ד"},
+        {id: "4008", name: "רמי רום", tz: "408990011", wing: "אגף ד"},
+        {id: "4009", name: "שי שלגי", tz: "409001122", wing: "אגף ד"},
+        {id: "4010", name: "תמיר תור", tz: "410112233", wing: "אגף ד"}
+    ];
 
-    let successMode = true;
+    let selectedPrisoner = null;
+    let currentWing = "אגף א";
+    let isSuccessSim = true;
     let camStream = null;
+    let reports = [];
 
-    window.onload = () => {
-        if(localStorage.getItem('pref_logo')) document.getElementById('app-logo').src = localStorage.getItem('pref_logo');
-        if(localStorage.getItem('pref_user')) document.getElementById('user-img-preview').src = localStorage.getItem('pref_user');
-    };
+    window.addEventListener('DOMContentLoaded', () => {
+        initReports();
+        filterWing('אגף א');
+        renderReports();
+    });
 
-    function switchTab(target) {
-        document.getElementById('view-main').classList.toggle('active', target === 'main');
-        document.getElementById('view-reports').classList.toggle('active', target === 'reports');
-        document.getElementById('btn-nav-main').classList.toggle('active', target === 'main');
-        document.getElementById('btn-nav-reports').classList.toggle('active', target === 'reports');
-        if(target !== 'main') stopCamera();
-    }
+    function initReports() {
+        const saved = localStorage.getItem('saved_reports');
+        let needsReset = false;
 
-    async function runScan() {
-        try {
-            camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            document.getElementById('webcam').srcObject = camStream;
-            document.getElementById('scanner-panel').classList.add('scanning');
-            document.getElementById('btn-start').disabled = true;
-            setTimeout(finishScan, 3000);
-        } catch(e) { alert("נדרשת מצלמה ו-HTTPS"); }
-    }
+        // בדיקה אם הנתונים ב-Cache הם הישנים (שעה 8:00)
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.length > 0 && data[0].time.includes("08:00:00")) {
+                needsReset = true;
+            }
+        }
 
-    function finishScan() {
-        stopCamera();
-        document.getElementById('scanner-panel').classList.remove('scanning');
-        document.getElementById('idle-msg').style.display = 'none';
-        if(successMode) {
-            document.getElementById('time-display').innerText = new Date().toLocaleTimeString('he-IL');
-            document.getElementById('card-success').style.display = 'block';
+        if (!saved || JSON.parse(saved).length === 0 || needsReset) {
+            const initialReports = [];
+            const wings = ["אגף א", "אגף ב", "אגף ג", "אגף ד"];
+            let currentTime = new Date();
+            // התחלה של שעתיים אחורה
+            currentTime.setHours(currentTime.getHours() - 2);
+
+            wings.forEach(wingName => {
+                const wingPrisoners = prisoners.filter(p => p.wing === wingName);
+                
+                wingPrisoners.forEach(p => {
+                    // הפרש של 10-20 שניות בין אסירים באותו אגף
+                    const secondsGap = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
+                    currentTime.setSeconds(currentTime.getSeconds() + secondsGap);
+                    
+                    initialReports.push({
+                        time: currentTime.toLocaleString('he-IL'),
+                        name: p.name,
+                        id: p.id,
+                        wing: p.wing,
+                        ts: currentTime.getTime()
+                    });
+                });
+
+                // הפרש של 5-10 דקות בין מעבר אגפים
+                const minutesGap = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+                currentTime.setMinutes(currentTime.getMinutes() + minutesGap);
+            });
+
+            // מיון מהחדש לישן
+            reports = initialReports.sort((a,b) => b.ts - a.ts);
+            localStorage.setItem('saved_reports', JSON.stringify(reports));
         } else {
-            document.getElementById('card-fail').style.display = 'block';
-            document.getElementById('result-panel').classList.add('fail-ui');
+            reports = JSON.parse(saved);
         }
     }
 
-    function approveAndSave() {
-        const row = `<tr><td>ישראל ישראלי</td><td>111111118</td><td>123456</td><td>${new Date().toLocaleString('he-IL')}</td></tr>`;
-        document.getElementById('reports-list').innerHTML = row + document.getElementById('reports-list').innerHTML;
-        alert("נרשם!");
+    function tab(name) {
+        document.getElementById('view-main').classList.toggle('active', name === 'main');
+        document.getElementById('view-reports').classList.toggle('active', name === 'reports');
+        document.getElementById('b-main').classList.toggle('active', name === 'main');
+        document.getElementById('b-reports').classList.toggle('active', name === 'reports');
+        if(name !== 'main') stopCam();
+    }
+
+    function filterWing(wing) {
+        currentWing = wing;
+        const btns = document.querySelectorAll('.wing-btn');
+        btns.forEach(b => {
+            const btnText = b.innerText.trim().replace("'", "");
+            const targetText = wing.replace("'", "");
+            if(btnText === targetText) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+        renderPrisoners();
+    }
+
+    function renderPrisoners(data = null) {
+        const list = data || prisoners.filter(p => p.wing === currentWing);
+        const html = list.map(p => `
+            <tr id="p-row-${p.id}" onclick="selectPrisoner('${p.id}')">
+                <td>${p.id}</td>
+                <td>${p.name}</td>
+                <td>${p.tz}</td>
+            </tr>
+        `).join('');
+        document.getElementById('prisoner-table-body').innerHTML = html;
+        selectedPrisoner = null;
+        document.getElementById('start-btn').disabled = true;
+    }
+
+    function searchPrisoner() {
+        const val = document.getElementById('prisoner-search').value;
+        if(!val) return renderPrisoners();
+        const filtered = prisoners.filter(p => p.id.includes(val));
+        renderPrisoners(filtered);
+    }
+
+    function selectPrisoner(id) {
+        selectedPrisoner = prisoners.find(p => p.id === id);
+        document.querySelectorAll('#prisoner-table-body tr').forEach(r => r.classList.remove('selected'));
+        const row = document.getElementById(`p-row-${id}`);
+        if(row) row.classList.add('selected');
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('res-idle').innerText = "מוכן לסריקה עבור: " + selectedPrisoner.name;
+    }
+
+    async function startProcess() {
+        try {
+            camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('webcam').srcObject = camStream;
+            document.getElementById('panel-v').classList.add('scanning');
+            document.getElementById('start-btn').disabled = true;
+            setTimeout(onScanComplete, 2000);
+        } catch(e) { alert("מצלמה לא זמינה"); }
+    }
+
+    function onScanComplete() {
+        stopCam();
+        document.getElementById('panel-v').classList.remove('scanning');
+        const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
+        
+        if(isSuccessSim) {
+            if(row) row.className = 'match-ok';
+            document.getElementById('res-idle').style.display = 'none';
+            document.getElementById('res-card').style.display = 'block';
+            document.getElementById('res-name').innerText = selectedPrisoner.name;
+            if(localStorage.getItem('demo_u')) document.getElementById('res-img').src = localStorage.getItem('demo_u');
+        } else {
+            if(row) row.className = 'match-fail';
+            alert("אין התאמה!");
+            document.getElementById('start-btn').disabled = false;
+        }
+    }
+
+    function saveMatch() {
+        const entry = {
+            time: new Date().toLocaleString('he-IL'),
+            name: selectedPrisoner.name,
+            id: selectedPrisoner.id,
+            wing: selectedPrisoner.wing,
+            ts: Date.now()
+        };
+        reports.unshift(entry);
+        localStorage.setItem('saved_reports', JSON.stringify(reports));
+        renderReports();
+        alert("רישום נשמר בדוחות");
         resetUI();
     }
 
     function resetUI() {
-        document.getElementById('card-success').style.display = 'none';
-        document.getElementById('card-fail').style.display = 'none';
-        document.getElementById('idle-msg').style.display = 'block';
-        document.getElementById('result-panel').classList.remove('fail-ui');
-        document.getElementById('btn-start').disabled = false;
-        document.getElementById('webcam').srcObject = null;
+        document.getElementById('res-card').style.display = 'none';
+        document.getElementById('res-idle').style.display = 'block';
+        document.getElementById('res-idle').innerText = "ממתין לבחירת אסיר...";
+        renderPrisoners();
     }
 
-    function stopCamera() { if(camStream) camStream.getTracks().forEach(t => t.stop()); }
-    function toggleResultMode() { successMode = !successMode; alert("מצב: " + (successMode ? "הצלחה" : "כישלון")); }
-    function uploadFile(i, id, k) {
+    function renderReports(data = null) {
+        const list = data || reports;
+        const body = document.getElementById('reports-body');
+        if (!body) return;
+        body.innerHTML = list.map(r => `
+            <tr>
+                <td>${r.time}</td>
+                <td>${r.name}</td>
+                <td>${r.id}</td>
+                <td>${r.wing}</td>
+            </tr>
+        `).join('');
+    }
+
+    function filterReports() {
+        const nameVal = document.getElementById('f-name').value.toLowerCase();
+        const wingVal = document.getElementById('f-wing').value;
+        const filtered = reports.filter(r => 
+            (r.name.toLowerCase().includes(nameVal)) && 
+            (wingVal === "" || r.wing === wingVal)
+        );
+        renderReports(filtered);
+    }
+
+    let sortAsc = false;
+    function sortReports() {
+        sortAsc = !sortAsc;
+        reports.sort((a,b) => sortAsc ? a.ts - b.ts : b.ts - a.ts);
+        renderReports();
+    }
+
+    function stopCam() { if(camStream) camStream.getTracks().forEach(t => t.stop()); }
+    function toggleSim() { isSuccessSim = !isSuccessSim; alert("סימולציה: " + (isSuccessSim ? "הצלחה" : "כישלון")); }
+    function loadImg(i) {
         if (i.files && i.files[0]) {
             const r = new FileReader();
-            r.onload = (e) => { document.getElementById(id).src = e.target.result; localStorage.setItem(k, e.target.result); };
+            r.onload = (e) => localStorage.setItem('demo_u', e.target.result);
             r.readAsDataURL(i.files[0]);
         }
     }
