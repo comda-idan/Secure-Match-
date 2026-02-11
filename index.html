@@ -66,7 +66,8 @@
         .scan-panel { flex: 1; background: var(--glass); border-radius: 15px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; position: relative; }
         
         #video-container, .user-image { width: 120px; height: 120px; background: #000; border-radius: 50%; border: 2px solid var(--secondary); overflow: hidden; position: relative; }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        /* הוסר ה-transform: scaleX(-1) כדי שהמצלמה האחורית לא תהיה הפוכה */
+        video { width: 100%; height: 100%; object-fit: cover; }
         .scan-line { position: absolute; top: 10%; left: 0; width: 100%; height: 2px; background: var(--primary); display: none; }
         .scanning .scan-line { display: block; animation: scan 2s infinite linear; }
         @keyframes scan { 0% { top: 10%; } 100% { top: 90%; } }
@@ -309,12 +310,15 @@
 
     async function startProcess() {
         try {
-            camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // שינוי: פתיחת המצלמה האחורית (environment)
+            camStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
+            });
             document.getElementById('webcam').srcObject = camStream;
             document.getElementById('panel-v').classList.add('scanning');
             document.getElementById('start-btn').disabled = true;
             setTimeout(onScanComplete, 2000);
-        } catch(e) { alert("מצלמה לא זמינה"); }
+        } catch(e) { alert("מצלמה לא זמינה או שנדחתה הרשאה"); }
     }
 
     function onScanComplete() {
@@ -325,7 +329,6 @@
             document.getElementById('res-idle').style.display = 'none';
             document.getElementById('res-card').style.display = 'block';
             document.getElementById('res-name').innerText = selectedPrisoner.name;
-            // שינוי: טעינת תמונה לפי מספר אסיר מהתיקייה המקומית
             document.getElementById('res-img').src = `${selectedPrisoner.id}.jpg`;
         } else {
             const row = document.getElementById(`p-row-${selectedPrisoner.id}`);
